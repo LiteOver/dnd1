@@ -1,0 +1,13 @@
+{
+  "name": "Вспышки",
+  "version": "2.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Вспышки",
+    "icon": "/icon.svg",
+    "popover": "/index.html",
+    "width": 280,
+    "height": 260
+  },
+  "background_url": "/background.html"
+}

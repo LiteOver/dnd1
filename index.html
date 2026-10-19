@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вспышки</title>
+<style>
+  :root {
+    --bg: #1b1512; --panel: #271e19; --text: #f3e6d8; --muted: #a8968a;
+    --accent: #ff8a2a; --accent-ink: #1b1512; --line: #3b2d25;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #fbf4ec; --panel: #f1e4d4; --text: #2b1d14; --muted: #7a655a;
+            --accent: #d9560b; --accent-ink: #fff7ef; --line: #e0cdb8; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px; background: var(--bg); color: var(--text);
+         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  .row { margin-bottom: 12px; }
+  .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; display: block; }
+  .chips { display: flex; gap: 6px; }
+  .chip { flex: 1; position: relative; }
+  .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips label { display: block; text-align: center; padding: 7px 4px; border-radius: 8px;
+                 background: var(--panel); border: 1px solid var(--line); cursor: pointer; font-size: 12px; }
+  .chips input:checked + label { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .chips input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--panel); color: var(--text); font: inherit; cursor: pointer; }
+  button.main { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .opt { display: flex; gap: 8px; align-items: center; margin-top: 12px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .opt input { accent-color: var(--accent); }
+  #status { margin-top: 10px; min-height: 18px; max-height: 90px; overflow: auto; color: var(--muted); font-size: 12px; word-break: break-word; user-select: text; }
+</style>
+</head>
+<body>
+  <h1>Вспышки</h1>
+
+  <div id="flash-box">
+    <div class="row">
+      <span class="label">Цвет вспышки</span>
+      <div class="chips" role="radiogroup" aria-label="Цвет вспышки">
+        <span class="chip"><input type="radio" name="flashcolor" id="f-red" value="red" checked><label for="f-red">Красная</label></span>
+        <span class="chip"><input type="radio" name="flashcolor" id="f-white" value="white"><label for="f-white">Белая</label></span>
+        <span class="chip"><input type="radio" name="flashcolor" id="f-blue" value="blue"><label for="f-blue">Синяя</label></span>
+      </div>
+    </div>
+    <button class="main" id="flash" disabled>Вспышка у всех игроков</button>
+  </div>
+  <label class="opt"><input type="checkbox" id="accept" checked> Показывать вспышки у меня</label>
+  <div id="status" role="status">Подключаюсь к Owlbear Rodeo…</div>
+
+<script type="module">
+import OBR from "https://esm.sh/@owlbear-rodeo/sdk@3";
+import { CHANNEL, ACCEPT_KEY } from "./flash.js";
+
+const $ = (id) => document.getElementById(id);
+const status = (text) => { $("status").textContent = text; };
+
+function errText(e) {
+  if (!e) return "неизвестная ошибка";
+  if (typeof e === "string") return e;
+  const inner = e.error || e;
+  if (inner.message) return (inner.name ? inner.name + ": " : "") + inner.message;
+  try { return JSON.stringify(e); } catch (_) { return String(e); }
+}
+
+async function sendFlash() {
+  try {
+    const color = document.querySelector("input[name=flashcolor]:checked").value;
+    await OBR.broadcast.sendMessage(CHANNEL, { color }, { destination: "ALL" });
+    status("Вспышка отправлена.");
+  } catch (e) {
+    console.error(e);
+    status("Не получилось: " + errText(e));
+  }
+}
+
+OBR.onReady(async () => {
+  $("flash").disabled = false;
+  $("flash").addEventListener("click", sendFlash);
+
+  try { $("accept").checked = localStorage.getItem(ACCEPT_KEY) !== "0"; } catch (_) {}
+  $("accept").addEventListener("change", () => {
+    try { localStorage.setItem(ACCEPT_KEY, $("accept").checked ? "1" : "0"); } catch (_) {}
+  });
+  try {
+    if ((await OBR.player.getRole()) !== "GM") $("flash-box").style.display = "none";
+  } catch (_) {}
+
+  status("Готово. Выбери цвет и жми кнопку.");
+});
+</script>
+</body>
+</html>

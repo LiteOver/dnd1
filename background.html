@@ -1,0 +1,51 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Вспышки (фон)</title></head>
+<body>
+<script type="module">
+import OBR from "https://esm.sh/@owlbear-rodeo/sdk@3";
+import { CHANNEL, ACCEPT_KEY, DURATION_MS, makeFlash, STYLES } from "./flash.js";
+
+function accepting() {
+  try { return localStorage.getItem(ACCEPT_KEY) !== "0"; } catch (_) { return true; }
+}
+
+let flashing = false;
+
+async function playFlash(color) {
+  if (flashing || !accepting()) return;
+  if (!(await OBR.scene.isReady())) return;
+  flashing = true;
+  const effect = makeFlash(color);
+  const tint = STYLES[color] || STYLES.red;
+  try {
+    await OBR.scene.local.addItems([effect]);
+    const start = performance.now();
+    for (;;) {
+      const p = (performance.now() - start) / DURATION_MS;
+      if (p >= 1) break;
+      await OBR.scene.local.updateItems([effect.id], (items) => {
+        for (const it of items) {
+          it.uniforms = [
+            { name: "progress", value: p },
+            { name: "tint", value: tint },
+          ];
+        }
+      });
+      await new Promise((r) => setTimeout(r, 33));
+    }
+  } catch (e) {
+    console.error("flash failed", e);
+  } finally {
+    try { await OBR.scene.local.deleteItems([effect.id]); } catch (_) {}
+    flashing = false;
+  }
+}
+
+OBR.onReady(() => {
+  OBR.broadcast.onMessage(CHANNEL, (event) => {
+    const color = event && event.data && event.data.color;
+    playFlash(color);
+  });
+});
+</script>
+</body></html>

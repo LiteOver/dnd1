@@ -4,10 +4,10 @@
   "manifest_version": 1,
   "action": {
     "title": "Вспышки",
-    "icon": "icon.svg",
-    "popover": "index.html",
+    "icon": "https://liteover.github.io/dnd1/icon.svg",
+    "popover": "https://liteover.github.io/dnd1/index.html",
     "width": 280,
     "height": 260
   },
-  "background_url": "background.html"
+  "background_url": "https://liteover.github.io/dnd1/background.html"
 }
